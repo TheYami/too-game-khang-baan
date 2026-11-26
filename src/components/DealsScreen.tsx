@@ -10,9 +10,13 @@ import type { Deal } from "@/lib/cheapshark/types";
 import { copyText } from "@/lib/clipboard";
 import {
   applyQuickFilters,
-  sortBySavings,
+  DEFAULT_DEALS_QUERY,
+  DEFAULT_SORT,
+  SORT_OPTIONS,
+  sortDeals,
   toDealsQuery,
   type QuickFilterId,
+  type SortId,
 } from "@/lib/deals/filters";
 import {
   buildFacebookPostPrompt,
@@ -21,6 +25,7 @@ import {
 import { AppHeader } from "./AppHeader";
 import { ArcadeLoader } from "./ArcadeLoader";
 import { DealCard } from "./DealCard";
+import { GachaLauncher } from "./GachaLauncher";
 import { QuickFilters } from "./QuickFilters";
 import { SearchBar } from "./SearchBar";
 import { useToast } from "./ToastProvider";
@@ -35,7 +40,9 @@ interface DealsScreenProps {
   initialPrices?: RegionalPriceMap;
 }
 
-const timeFormatter = new Intl.DateTimeFormat("th-TH", {
+const DEFAULT_QUERY_KEY = JSON.stringify(DEFAULT_DEALS_QUERY);
+
+const timeFormatter =new Intl.DateTimeFormat("th-TH", {
   hour: "2-digit",
   minute: "2-digit",
 });
@@ -55,11 +62,14 @@ export function DealsScreen({
   );
   const debouncedSearch = useDebouncedValue(search);
 
+  const [sort, setSort] = useState<SortId>(DEFAULT_SORT);
+
   const query = useMemo(
-    () => toDealsQuery(debouncedSearch, activeFilters),
-    [debouncedSearch, activeFilters],
+    () => toDealsQuery(debouncedSearch, activeFilters, sort),
+    [debouncedSearch, activeFilters, sort],
   );
-  const isDefaultQuery = Object.keys(query).length === 0;
+  // ดีลชุดตั้งต้นจากเซิร์ฟเวอร์ใช้ได้เฉพาะตอนเงื่อนไขตรงกับค่าเริ่มต้นเป๊ะ
+  const isDefaultQuery = JSON.stringify(query) === DEFAULT_QUERY_KEY;
 
   const { deals, status, hasMore, updatedAt, refresh, loadMore } = useDeals(
     query,
@@ -71,11 +81,12 @@ export function DealsScreen({
   // กรองและเรียงด้วยราคา/ส่วนลดของร้านไทย ให้ตรงกับตัวเลขที่โชว์บนการ์ด
   const visibleDeals = useMemo(
     () =>
-      sortBySavings(
+      sortDeals(
         applyQuickFilters(deals, activeFilters, regionalPrices),
+        sort,
         regionalPrices,
       ),
-    [deals, activeFilters, regionalPrices],
+    [deals, activeFilters, sort, regionalPrices],
   );
 
   const toggleFilter = useCallback((id: QuickFilterId) => {
@@ -148,11 +159,39 @@ export function DealsScreen({
       </AppHeader>
 
       <main className="mx-auto max-w-5xl px-4 pt-4 pb-[calc(2rem+env(safe-area-inset-bottom))]">
-        <div className="mb-3 flex min-h-11 items-center justify-between gap-3">
+        {!isAdmin && <GachaLauncher />}
+
+        <div className="mb-3 flex min-h-11 flex-wrap items-center justify-between gap-x-3 gap-y-2">
           <p className="text-sm text-cream-dim">
             {showSkeleton ? "กำลังโหลดดีล" : `${visibleDeals.length} ดีล`}
             {updatedAt !== null && ` · อัปเดต ${timeFormatter.format(updatedAt)}`}
           </p>
+          <div className="relative">
+            <select
+              value={sort}
+              onChange={(event) => setSort(event.target.value as SortId)}
+              aria-label="เรียงลำดับ"
+              className="h-11 appearance-none rounded-xl border border-cabinet-600 bg-cabinet-800 pr-10 pl-4 text-sm font-medium text-cream focus:border-ember-400 focus:ring-2 focus:ring-ember-400/30 focus:outline-none"
+            >
+              {SORT_OPTIONS.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-cream-dim"
+              aria-hidden
+            >
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </div>
           {isAdmin && visibleDeals.length > 1 && (
             <button
               type="button"

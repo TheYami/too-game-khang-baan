@@ -1,5 +1,5 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
+import { LogoLink } from "./LogoLink";
 import { siteConfig } from "@/config/site";
 
 interface AppHeaderProps {
@@ -18,7 +18,7 @@ export function AppHeader({ subtitle, action, children, busy }: AppHeaderProps) 
       <div className="mx-auto max-w-5xl px-4">
         <div className="flex h-16 items-center gap-3">
           {/* โลโก้ + ชื่อ กดกลับหน้าแรกได้ (ใช้แทนแถบเมนูล่าง) */}
-          <Link href="/" className="flex min-w-0 flex-1 items-center gap-3">
+          <LogoLink>
             <div
               aria-hidden
               className="grid size-10 shrink-0 place-items-center rounded-xl border-2 border-gold-400 bg-ember-500 font-pixel text-sm text-cabinet-950 shadow-[0_3px_0_0_var(--color-ember-600)]"
@@ -31,7 +31,7 @@ export function AppHeader({ subtitle, action, children, busy }: AppHeaderProps) 
               </h1>
               <p className="truncate text-xs text-gold-400">{subtitle}</p>
             </div>
-          </Link>
+          </LogoLink>
           {action}
         </div>
         {children && <div className="space-y-3 pb-3">{children}</div>}

@@ -2,6 +2,7 @@ import { DealsScreen } from "@/components/DealsScreen";
 import { dealsConfig, steamConfig } from "@/config/site";
 import { fetchDeals } from "@/lib/cheapshark/client";
 import type { Deal } from "@/lib/cheapshark/types";
+import { DEFAULT_DEALS_QUERY } from "@/lib/deals/filters";
 import { fetchRegionalPrices } from "@/lib/steam/prices";
 
 // สร้างหน้าใหม่เบื้องหลังทุก 5 นาที (ค่าเดียวกับ dealsConfig.revalidateSeconds)
@@ -10,7 +11,7 @@ export const revalidate = 300;
 async function getInitialDeals(): Promise<Deal[]> {
   try {
     return await fetchDeals(
-      {},
+      DEFAULT_DEALS_QUERY,
       { next: { revalidate: dealsConfig.revalidateSeconds } },
     );
   } catch {

@@ -10,8 +10,10 @@ export function buildDealsUrl(query: DealsQuery = {}): string {
   const params = new URLSearchParams({
     storeID: dealsConfig.storeID,
     upperPrice: String(query.upperPrice ?? dealsConfig.upperPrice),
-    sortBy: dealsConfig.sortBy,
-    pageSize: String(dealsConfig.pageSize),
+    sortBy: query.sortBy ?? "DealRating",
+    pageSize: String(query.pageSize ?? dealsConfig.pageSize),
+    // เอาเฉพาะเกมที่กำลังลดราคาจริง (บางการเรียง เช่น Reviews จะมีเกมราคาเต็มปนมา)
+    onSale: "1",
   });
   if (query.title?.trim()) params.set("title", query.title.trim());
   if (query.steamRating) params.set("steamRating", String(query.steamRating));

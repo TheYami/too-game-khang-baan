@@ -35,7 +35,16 @@ export const dealsConfig = {
   /** 1 = Steam */
   storeID: "1",
   upperPrice: 15,
-  sortBy: "Savings",
+  /**
+   * การเรียงลำดับเริ่มต้น: "recommended" | "savings" | "reviews" | "price"
+   * recommended = Deal Rating ของ CheapShark ซึ่งดันเกมดังที่ลดคุ้มขึ้นมาก่อน
+   */
+  defaultSort: "recommended",
+  /**
+   * คะแนนรีวิว Steam ขั้นต่ำของรายการปกติ กันเกมที่ไม่มีใครรู้จักมาบังเกมดัง
+   * (ไม่ใช้ตอนค้นหาด้วยชื่อ เพื่อให้หาเกมไหนก็เจอ) — ตั้ง 0 = ไม่กรอง
+   */
+  minSteamRating: 75,
   pageSize: 12,
   /** อายุ cache ของหน้าแรกฝั่งเซิร์ฟเวอร์ (วินาที) */
   revalidateSeconds: 300,
@@ -51,7 +60,23 @@ export const steamConfig = {
   currencySymbol: "฿",
   /** Steam ให้ cache ราคาได้ 1 ชั่วโมง เราเก็บ 10 นาทีเพื่อให้ราคาสดกว่า */
   revalidateSeconds: 600,
-  maxAppsPerRequest: 40,
+  maxAppsPerRequest: 60,
+  /** ใช้เทียบราคาเฉพาะเกมที่ Steam ไม่มีราคาบาทให้ (ไม่เคยโชว์ให้ผู้ใช้เห็น) */
+  approxThbPerUsd: 35,
+} as const;
+
+/** ฟีเจอร์ "สุ่มเกมน่าเล่น" */
+export const gachaConfig = {
+  /** สุ่มจากเกมที่คะแนนรีวิว Steam ไม่ต่ำกว่านี้ */
+  minSteamRating: 80,
+  /** จำนวนเกมในกองที่ดึงมาสุ่ม (CheapShark ให้ได้สูงสุด 60 ต่อคำขอ) */
+  poolSize: 60,
+  /** ราคา USD สูงสุดของกองเมื่อไม่จำกัดงบ */
+  upperPriceUsd: 30,
+  /** ตัวเลือกงบเป็นบาท — เพิ่ม/ลดได้ตามใจ */
+  budgetsThb: [150, 300],
+  /** เวลาที่ลูกเต๋าหมุนก่อนเฉลยเกม (มิลลิวินาที) */
+  rollMs: 1100,
 } as const;
 
 /** เกณฑ์ของปุ่มกรองด่วน */

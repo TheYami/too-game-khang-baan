@@ -48,4 +48,8 @@ export interface DealsQuery {
   steamRating?: number;
   /** หน้า เริ่มที่ 0 */
   pageNumber?: number;
+  /** ค่า sortBy ของ CheapShark: DealRating | Savings | Reviews | Price */
+  sortBy?: string;
+  /** จำนวนต่อหน้า (สูงสุด 60) — ไม่ส่ง = dealsConfig.pageSize */
+  pageSize?: number;
 }

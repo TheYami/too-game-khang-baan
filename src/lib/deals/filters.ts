@@ -1,6 +1,12 @@
-import { quickFilterThresholds as t, steamConfig } from "@/config/site";
+import {
+  dealsConfig,
+  quickFilterThresholds as t,
+  steamConfig,
+} from "@/config/site";
 import type { Deal, DealsQuery } from "@/lib/cheapshark/types";
 import type { RegionalPrice, RegionalPriceMap } from "@/lib/steam/types";
+
+/* ---------- ตัวกรองด่วน ---------- */
 
 export type QuickFilterId = "bigDiscount" | "goodRating" | "cheap";
 
@@ -18,20 +24,58 @@ export const QUICK_FILTERS: QuickFilter[] = [
   },
 ];
 
+/* ---------- การเรียงลำดับ ---------- */
+
+export type SortId = "recommended" | "savings" | "reviews" | "price";
+
+export interface SortOption {
+  id: SortId;
+  label: string;
+  /** ค่า sortBy ที่ส่งให้ CheapShark */
+  apiSortBy: string;
+}
+
+export const SORT_OPTIONS: SortOption[] = [
+  { id: "recommended", label: "ดีลคุ้มค่าแนะนำ", apiSortBy: "DealRating" },
+  { id: "savings", label: "ลดเยอะสุด (%)", apiSortBy: "Savings" },
+  { id: "reviews", label: "คะแนนรีวิวสูงสุด", apiSortBy: "Reviews" },
+  { id: "price", label: "ราคาถูกสุด", apiSortBy: "Price" },
+];
+
+export const DEFAULT_SORT: SortId = dealsConfig.defaultSort;
+
+/* ---------- แปลงเป็นเงื่อนไขของ API ---------- */
+
 /**
- * แปลงคำค้น + ปุ่มกรองเป็นเงื่อนไขที่ส่งให้ API
- * ส่งให้ API เฉพาะเงื่อนไขที่ไม่ขึ้นกับประเทศ (ชื่อเกม, คะแนนรีวิว)
+ * แปลงคำค้น + ปุ่มกรอง + การเรียง เป็นเงื่อนไขที่ส่งให้ API
+ * ส่งให้ API เฉพาะเงื่อนไขที่ไม่ขึ้นกับประเทศ (ชื่อเกม, คะแนนรีวิว, การเรียง)
  * ส่วนราคาและส่วนลดกรองฝั่งแอปด้วยตัวเลขของร้านไทย — ดู applyQuickFilters
  */
 export function toDealsQuery(
   search: string,
   active: ReadonlySet<QuickFilterId>,
+  sort: SortId = DEFAULT_SORT,
 ): DealsQuery {
-  const query: DealsQuery = {};
-  if (search.trim()) query.title = search.trim();
-  if (active.has("goodRating")) query.steamRating = t.goodRatingPercent;
+  const option = SORT_OPTIONS.find((o) => o.id === sort) ?? SORT_OPTIONS[0];
+  const query: DealsQuery = { sortBy: option.apiSortBy };
+
+  const title = search.trim();
+  if (title) query.title = title;
+
+  // ค้นด้วยชื่อ = อยากเจอเกมนั้นจริง ๆ จึงไม่กรองคะแนนขั้นต่ำ (ยกเว้นกดปุ่มกรองเอง)
+  const ratingFloor = Math.max(
+    title ? 0 : dealsConfig.minSteamRating,
+    active.has("goodRating") ? t.goodRatingPercent : 0,
+  );
+  if (ratingFloor > 0) query.steamRating = ratingFloor;
+
   return query;
 }
+
+/** เงื่อนไขตั้งต้นของหน้าแรก — เซิร์ฟเวอร์กับเบราว์เซอร์ใช้ตัวเดียวกัน */
+export const DEFAULT_DEALS_QUERY: DealsQuery = toDealsQuery("", new Set());
+
+/* ---------- กรอง/เรียงฝั่งแอปด้วยตัวเลขร้านไทย ---------- */
 
 function regionalOf(
   deal: Deal,
@@ -43,6 +87,14 @@ function regionalOf(
 /** ส่วนลดที่ใช้ตัดสิน: ของร้านไทยถ้ามี ไม่มีก็ใช้ของ CheapShark (โซนสหรัฐ) */
 function effectiveSavings(deal: Deal, prices: RegionalPriceMap): number {
   return regionalOf(deal, prices)?.discountPercent ?? deal.savings;
+}
+
+/** ราคาเป็นบาทสำหรับเทียบกัน (เกมที่ไม่มีราคาบาทใช้ค่าประมาณจาก USD) */
+export function effectivePriceThb(deal: Deal, prices: RegionalPriceMap): number {
+  return (
+    regionalOf(deal, prices)?.sale ??
+    deal.salePrice * steamConfig.approxThbPerUsd
+  );
 }
 
 function isCheap(deal: Deal, prices: RegionalPriceMap): boolean {
@@ -77,10 +129,25 @@ export function applyQuickFilters(
   });
 }
 
-/** เรียงจากลดมากไปน้อยตามส่วนลดของร้านไทย (เท่ากัน = คงลำดับเดิมจาก API) */
-export function sortBySavings(deals: Deal[], prices: RegionalPriceMap = {}): Deal[] {
+/**
+ * จัดลำดับสุดท้ายก่อนโชว์
+ * - แนะนำ / รีวิว: คงลำดับจาก API (ไม่ขึ้นกับประเทศ)
+ * - ลดเยอะสุด / ราคาถูกสุด: เรียงซ้ำด้วยตัวเลขร้านไทย ให้ตรงกับที่โชว์บนการ์ด
+ */
+export function sortDeals(
+  deals: Deal[],
+  sort: SortId,
+  prices: RegionalPriceMap = {},
+): Deal[] {
+  if (sort !== "savings" && sort !== "price") return deals;
+
+  const keyOf = (deal: Deal) =>
+    sort === "savings"
+      ? -effectiveSavings(deal, prices)
+      : effectivePriceThb(deal, prices);
+
   return deals
-    .map((deal, index) => ({ deal, index, savings: effectiveSavings(deal, prices) }))
-    .sort((a, b) => b.savings - a.savings || a.index - b.index)
+    .map((deal, index) => ({ deal, index, key: keyOf(deal) }))
+    .sort((a, b) => a.key - b.key || a.index - b.index)
     .map((entry) => entry.deal);
 }
