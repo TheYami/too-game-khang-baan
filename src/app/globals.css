@@ -1,0 +1,144 @@
+@import "tailwindcss";
+
+/* โทนเรโทรเกมมิ่ง: Dark Slate + ส้มอบอุ่น + เหลืองทอง */
+@theme {
+  --color-cabinet-950: #10141c;
+  --color-cabinet-900: #161b26;
+  --color-cabinet-800: #1f2633;
+  --color-cabinet-700: #2b3445;
+  --color-cabinet-600: #3f4a60;
+
+  --color-ember-400: #ff9d52;
+  --color-ember-500: #f5822f;
+  --color-ember-600: #c9611a;
+
+  --color-gold-300: #ffd980;
+  --color-gold-400: #f7c04a;
+  --color-gold-500: #dba22a;
+
+  --color-cream: #f7edd8;
+  --color-cream-dim: #b3aa9a;
+}
+
+@theme inline {
+  --font-sans: var(--font-prompt), ui-sans-serif, system-ui, sans-serif;
+  --font-pixel: var(--font-pixel), ui-monospace, monospace;
+}
+
+html {
+  background: var(--color-cabinet-900);
+  color-scheme: dark;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  min-height: 100dvh;
+  background: var(--color-cabinet-900);
+  color: var(--color-cream);
+  overscroll-behavior-y: none;
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@utility toast-in {
+  animation: toast-in 180ms ease-out;
+}
+
+/* ---------- หน้าจอโหลดสไตล์ตู้เกม ---------- */
+
+/* เหรียญหมุนรอบแกนตั้งพร้อมเด้งขึ้นลง */
+@keyframes coin-flip {
+  0%,
+  100% {
+    transform: translateY(0) scaleX(1);
+  }
+  25% {
+    transform: translateY(-14px) scaleX(0.12);
+  }
+  50% {
+    transform: translateY(0) scaleX(1);
+  }
+  75% {
+    transform: translateY(-14px) scaleX(0.12);
+  }
+}
+
+@utility coin-flip {
+  animation: coin-flip 1.4s ease-in-out infinite;
+}
+
+/* เงาใต้เหรียญ หดตอนเหรียญลอยขึ้น */
+@keyframes coin-shadow {
+  0%,
+  50%,
+  100% {
+    transform: scaleX(1);
+    opacity: 0.6;
+  }
+  25%,
+  75% {
+    transform: scaleX(0.55);
+    opacity: 0.25;
+  }
+}
+
+@utility coin-shadow {
+  animation: coin-shadow 1.4s ease-in-out infinite;
+}
+
+/* บล็อกพิกเซลติดทีละช่อง — steps ทำให้ติด/ดับแบบจอเกมเก่า ไม่ค่อย ๆ จาง */
+@keyframes block-fill {
+  0%,
+  100% {
+    opacity: 0.15;
+  }
+  30%,
+  70% {
+    opacity: 1;
+  }
+}
+
+@utility block-fill {
+  opacity: 0.15;
+  animation: block-fill 1.5s steps(1, end) infinite;
+}
+
+/* แถบวิ่งใต้หัว ตอนดึงข้อมูลใหม่เบื้องหลัง */
+@keyframes refresh-slide {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(350%);
+  }
+}
+
+@utility refresh-slide {
+  animation: refresh-slide 1.1s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-iteration-count: 1 !important;
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
